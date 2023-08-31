@@ -1,20 +1,21 @@
-//
-// Created by xinzheng long on 2023/8/30.
-//
-
 #ifndef TIMER_H_
 #define TIMER_H_
 
-#include <functional>
 #include <memory>
 #include <chrono>
+#include <functional>
 
 #define TIMER_INVALID_ID 1
 
-class Timer
+class Timer final 
 {
 public:
-    Timer();
+    Timer(const Timer &) = delete;
+    Timer(const Timer &&) = delete;
+    Timer & operator=(const Timer &) = delete;
+    Timer & operator=(const Timer &&) = delete;
+
+    explicit Timer(size_t num_worker = 1);
     ~Timer();
 
     using FuncType = std::function<void(void)>;
@@ -33,12 +34,16 @@ public:
     template<typename Rep, typename Period>
     Id add(const std::chrono::duration<Rep, Period>& time_out, EventType type, const FuncType & func, bool immediately = false);
 
-    bool remove(Id id);
+    bool remove(Id timer_id);
+    bool pause(Id timer_id);
+    bool resume(Id timer_id);
+    bool pauseAll();
+    bool resumeAll();
+
 private:
     Id registerEvent(const struct timespec &ts, Timer::EventType type, const Timer::FuncType & func, bool immediately);
     bool addEpollEvent(int fd, uint32_t state);
     bool delEpollEvent(int fd, uint32_t state);
-    bool setupTimer(int timerFD, const struct timespec &it_interval, const struct timespec &it_value);
     void epollThreadWorker();
 
     std::unique_ptr<struct TimerPrivate> m_p;
